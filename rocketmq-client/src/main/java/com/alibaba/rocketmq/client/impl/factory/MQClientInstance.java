@@ -185,6 +185,7 @@ public class MQClientInstance {
                 @Override
                 public void run() {
                     try {
+                        //定时获取Name Server地址
                         MQClientInstance.this.mQClientAPIImpl.fetchNameServerAddr();
                     }
                     catch (Exception e) {
@@ -199,6 +200,7 @@ public class MQClientInstance {
             @Override
             public void run() {
                 try {
+                    //定时从Name Server上获取Topic路由信息
                     MQClientInstance.this.updateTopicRouteInfoFromNameServer();
                 }
                 catch (Exception e) {
@@ -212,7 +214,9 @@ public class MQClientInstance {
             @Override
             public void run() {
                 try {
+                    //定时清理下线的Broker
                     MQClientInstance.this.cleanOfflineBroker();
+                    //定时向所有的Broker发送心跳
                     MQClientInstance.this.sendHeartbeatToAllBrokerWithLock();
                 }
                 catch (Exception e) {
