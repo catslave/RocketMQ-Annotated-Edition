@@ -25,13 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
+ * 客户端实例工厂，单例
  * @author shijia.wxr
  */
 public class MQClientManager {
     private static MQClientManager instance = new MQClientManager();
     private AtomicInteger factoryIndexGenerator = new AtomicInteger();
     private ConcurrentHashMap<String/* clientId */, MQClientInstance> factoryTable =
-            new ConcurrentHashMap<String, MQClientInstance>();
+            new ConcurrentHashMap<String, MQClientInstance>();//管理多个客户端实例
 
 
     private MQClientManager() {
@@ -43,9 +44,14 @@ public class MQClientManager {
         return instance;
     }
 
-
+    /**
+     * 获取或者创建客户端实例
+     * @param clientConfig
+     * @param rpcHook
+     * @return
+     */
     public MQClientInstance getAndCreateMQClientInstance(final ClientConfig clientConfig, RPCHook rpcHook) {
-        String clientId = clientConfig.buildMQClientId();
+        String clientId = clientConfig.buildMQClientId();//根据客户端IP地址和生产者实例名称构建clientId标志
         MQClientInstance instance = this.factoryTable.get(clientId);
         if (null == instance) {
             instance =

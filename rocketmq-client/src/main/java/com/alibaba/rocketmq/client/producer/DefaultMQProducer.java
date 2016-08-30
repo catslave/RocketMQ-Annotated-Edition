@@ -32,21 +32,29 @@ import java.util.List;
 
 
 /**
+ * 默认的消息生产者对象
  * @author shijia.wxr
  */
 public class DefaultMQProducer extends ClientConfig implements MQProducer {
+    /**
+     * 消息生产者的实现类，生产者的所有操作实际都由DefaultMQProducerImpl来实现
+     */
     protected final transient DefaultMQProducerImpl defaultMQProducerImpl;
+    /**
+     * 生产者组别，一类生产者可以归属于一个组别，系统默认Group名称'DEFAULT_PRODUCER'。
+     * 创建生产者时，必须要为生产者指定Group组别且不能与系统默认名称相同，否则在启动的时候会报错。
+     */
     private String producerGroup;
     /**
      * Just for testing or demo program
      */
-    private String createTopicKey = MixAll.DEFAULT_TOPIC;
-    private volatile int defaultTopicQueueNums = 4;
-    private int sendMsgTimeout = 3000;
+    private String createTopicKey = MixAll.DEFAULT_TOPIC;//Topic Key 系统默认TBW102
+    private volatile int defaultTopicQueueNums = 4;//默认的消息队列数目
+    private int sendMsgTimeout = 3000;//消息发送时间不能超过3秒
     private int compressMsgBodyOverHowmuch = 1024 * 4;
-    private int retryTimesWhenSendFailed = 2;
-    private boolean retryAnotherBrokerWhenNotStoreOK = false;
-    private int maxMessageSize = 1024 * 128;
+    private int retryTimesWhenSendFailed = 2;//消息发送失败后，重试次数
+    private boolean retryAnotherBrokerWhenNotStoreOK = false;//Broker存储消息失败后，是否尝试将消息重新发给其他的Broker
+    private int maxMessageSize = 1024 * 128;//消息最大128M
 
     /**
      * ""

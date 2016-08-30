@@ -27,6 +27,7 @@ import java.util.List;
 
 
 /**
+ * 消息生成者接口，继承MAAdmin，并且定义了发送消息方法
  * @author shijia.wxr
  */
 public interface MQProducer extends MQAdmin {

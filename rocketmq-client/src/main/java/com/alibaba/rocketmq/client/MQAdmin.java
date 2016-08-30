@@ -25,16 +25,17 @@ import com.alibaba.rocketmq.remoting.exception.RemotingException;
 
 /**
  * Base interface for MQ management
- *
+ * 消息队列的基础接口，在RocektMQ中一类消息队列划分为一个Topic主题，每个Topic主题下可以有多个消息队列。
+ * 在基础接口这里定义了 createTopic 创建主题，公共方法。
  * @author shijia.wxr
  */
 public interface MQAdmin {
     /**
      * Creates an topic
      *
-     * @param key      accesskey
-     * @param newTopic topic name
-     * @param queueNum topic's queue number
+     * @param key      accesskey Topic Key
+     * @param newTopic topic name Topic的名称
+     * @param queueNum topic's queue number Topic消息队列数目（默认一个主题有四个消息队列）
      * @throws MQClientException
      */
     void createTopic(final String key, final String newTopic, final int queueNum)

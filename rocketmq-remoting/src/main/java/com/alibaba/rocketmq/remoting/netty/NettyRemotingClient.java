@@ -424,10 +424,12 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                 }
 
                 if (createNewConnection) {
+                    //与Broker远程地址建立连接
                     ChannelFuture channelFuture =
                             this.bootstrap.connect(RemotingHelper.string2SocketAddress(addr));
                     log.info("createChannel: begin to connect remote host[{}] asynchronously", addr);
                     cw = new ChannelWrapper(channelFuture);
+                    //将新建立的通道加入channelTables表中
                     this.channelTables.put(addr, cw);
                 }
             }
@@ -445,6 +447,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         if (cw != null) {
             ChannelFuture channelFuture = cw.getChannelFuture();
             if (channelFuture.awaitUninterruptibly(this.nettyClientConfig.getConnectTimeoutMillis())) {
+                //成功建立成功后，返回通道
                 if (cw.isOK()) {
                     log.info("createChannel: connect remote host[{}] success, {}", addr,
                         channelFuture.toString());
@@ -586,12 +589,14 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
     public RemotingCommand invokeSync(String addr, final RemotingCommand request, long timeoutMillis)
             throws InterruptedException, RemotingConnectException, RemotingSendRequestException,
             RemotingTimeoutException {
+        //1.根据Broker地址，获取Broker的通信管道。如果管道不存在，则新建管道。
         final Channel channel = this.getAndCreateChannel(addr);
         if (channel != null && channel.isActive()) {
             try {
                 if (this.rpcHook != null) {
                     this.rpcHook.doBeforeRequest(addr, request);
                 }
+                //2.与该管道进行通信，发送请求
                 RemotingCommand response = this.invokeSyncImpl(channel, request, timeoutMillis);
                 if (this.rpcHook != null) {
                     this.rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(channel), request,

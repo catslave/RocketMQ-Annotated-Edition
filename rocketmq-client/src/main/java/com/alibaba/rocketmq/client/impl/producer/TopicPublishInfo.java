@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
+ * Topic队列信息
  * @author shijia.wxr
  */
 public class TopicPublishInfo {

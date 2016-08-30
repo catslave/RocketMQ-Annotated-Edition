@@ -64,6 +64,8 @@ import java.util.*;
 
 
 /**
+ * 客户端通信类
+ *  封装了与服务端交互的接口
  * @author shijia.wxr
  */
 public class MQClientAPIImpl {
@@ -82,7 +84,7 @@ public class MQClientAPIImpl {
     public MQClientAPIImpl(final NettyClientConfig nettyClientConfig, final ClientRemotingProcessor clientRemotingProcessor,
             RPCHook rpcHook, final String unitName) {
         topAddressing = new TopAddressing(MixAll.WS_ADDR, unitName);
-        this.remotingClient = new NettyRemotingClient(nettyClientConfig, null);
+        this.remotingClient = new NettyRemotingClient(nettyClientConfig, null);//创建了一个Netty客户端
         this.clientRemotingProcessor = clientRemotingProcessor;
 
         this.remotingClient.registerRPCHook(rpcHook);
@@ -204,7 +206,22 @@ public class MQClientAPIImpl {
     public static boolean sendSmartMsg = //
             Boolean.parseBoolean(System.getProperty("com.alibaba.rocketmq.client.sendSmartMsg", "true"));
 
-
+    /**
+     * 发送消息
+     *  发送消息请求时，客户端将消息封装成一个通信协议RemotingCommand请求，然后将RemotingCommand请求发送给服务端，服务端处理后，
+     *  返回一个RemotingCommand响应，客户端将RemitngCommand响应拆封装成SendResult结果返回给调用者。
+     * @param addr Broker地址
+     * @param brokerName Broker名称
+     * @param msg 消息实体
+     * @param requestHeader 请求头部信息
+     * @param timeoutMillis 超时时间
+     * @param communicationMode 通信方式
+     * @param sendCallback 发送结果回调方法
+     * @return
+     * @throws RemotingException
+     * @throws MQBrokerException
+     * @throws InterruptedException
+     */
     public SendResult sendMessage(//
             final String addr,// 1
             final String brokerName,// 2
@@ -214,25 +231,26 @@ public class MQClientAPIImpl {
             final CommunicationMode communicationMode,// 6
             final SendCallback sendCallback// 7
     ) throws RemotingException, MQBrokerException, InterruptedException {
-        RemotingCommand request = null;
+        RemotingCommand request = null;//消息请求通信协议 发送消息时，只需将request发送给Broker即可
         if (sendSmartMsg) {
             SendMessageRequestHeaderV2 requestHeaderV2 = SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);
             request = RemotingCommand.createRequestCommand(RequestCode.SEND_MESSAGE_V2, requestHeaderV2);
         }
         else {
+            //构造远程通信协议，协议类型 SEND_MESSAGE。Broker收到请求后，根据协议类型做出相应的操作
             request = RemotingCommand.createRequestCommand(RequestCode.SEND_MESSAGE, requestHeader);
         }
 
         request.setBody(msg.getBody());
 
         switch (communicationMode) {
-        case ONEWAY:
+        case ONEWAY:// 单通道
             this.remotingClient.invokeOneway(addr, request, timeoutMillis);
             return null;
-        case ASYNC:
+        case ASYNC:// 异步
             this.sendMessageAsync(addr, brokerName, msg, timeoutMillis, request, sendCallback);
             return null;
-        case SYNC:
+        case SYNC:// 同步（默认）
             return this.sendMessageSync(addr, brokerName, msg, timeoutMillis, request);
         default:
             assert false;
@@ -250,8 +268,10 @@ public class MQClientAPIImpl {
             final long timeoutMillis,//
             final RemotingCommand request//
     ) throws RemotingException, MQBrokerException, InterruptedException {
+        //调用Netty客户端进行消息发送，只需发送request
         RemotingCommand response = this.remotingClient.invokeSync(addr, request, timeoutMillis);
         assert response != null;
+        //处理返回的结果
         return this.processSendResponse(brokerName, msg, response);
     }
 
@@ -297,7 +317,15 @@ public class MQClientAPIImpl {
         });
     }
 
-
+    /**
+     * 将RemotingCommand封装成SendResult
+     * @param brokerName
+     * @param msg
+     * @param response
+     * @return
+     * @throws MQBrokerException
+     * @throws RemotingCommandException
+     */
     private SendResult processSendResponse(//
             final String brokerName,//
             final Message msg,//
@@ -334,6 +362,13 @@ public class MQClientAPIImpl {
 
             MessageQueue messageQueue = new MessageQueue(msg.getTopic(), brokerName, responseHeader.getQueueId());
 
+            /**
+             * 发送结果：
+             * sendStatus 发送状态
+             * msgId 消息的ID
+             * messageQueue 消息队列：topic主题，broker名称，返回的queue队列Id
+             * queueOffset 消息在消息队列中的偏移量。获取消息时，首先从消息队列获取偏移量，然后再从Commit Log中根据偏移量读取消息。
+             */
             SendResult sendResult = new SendResult(sendStatus, responseHeader.getMsgId(), messageQueue, responseHeader.getQueueOffset());
             sendResult.setTransactionId(responseHeader.getTransactionId());
             return sendResult;

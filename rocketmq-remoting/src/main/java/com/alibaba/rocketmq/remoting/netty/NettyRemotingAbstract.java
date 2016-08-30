@@ -333,6 +333,7 @@ public abstract class NettyRemotingAbstract {
             final ResponseFuture responseFuture =
                     new ResponseFuture(request.getOpaque(), timeoutMillis, null, null);
             this.responseTable.put(request.getOpaque(), responseFuture);
+            //将请求写入管道
             channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture f) throws Exception {
@@ -352,6 +353,7 @@ public abstract class NettyRemotingAbstract {
                 }
             });
 
+            //等待结果响应
             RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
             if (null == responseCommand) {
                 if (responseFuture.isSendRequestOK()) {
@@ -364,6 +366,7 @@ public abstract class NettyRemotingAbstract {
                 }
             }
 
+            //返回结果
             return responseCommand;
         }
         finally {

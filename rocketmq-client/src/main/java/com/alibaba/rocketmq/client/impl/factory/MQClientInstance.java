@@ -59,6 +59,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
+ * 客户端实例
  * @author shijia.wxr
  */
 public class MQClientInstance {
@@ -68,11 +69,12 @@ public class MQClientInstance {
     private final int instanceIndex;
     private final String clientId;
     private final long bootTimestamp = System.currentTimeMillis();
+    //生产者队列
     private final ConcurrentHashMap<String/* group */, MQProducerInner> producerTable = new ConcurrentHashMap<String, MQProducerInner>();
     private final ConcurrentHashMap<String/* group */, MQConsumerInner> consumerTable = new ConcurrentHashMap<String, MQConsumerInner>();
     private final ConcurrentHashMap<String/* group */, MQAdminExtInner> adminExtTable = new ConcurrentHashMap<String, MQAdminExtInner>();
     private final NettyClientConfig nettyClientConfig;
-    private final MQClientAPIImpl mQClientAPIImpl;
+    private final MQClientAPIImpl mQClientAPIImpl;//通过MQClientAPIImpl来实现与服务端的交互，MQClientAPIImpl内部创建了一个Netty客户端
     private final MQAdminImpl mQAdminImpl;
     private final ConcurrentHashMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<String, TopicRouteData>();
     private final Lock lockNamesrv = new ReentrantLock();
@@ -85,10 +87,10 @@ public class MQClientInstance {
             return new Thread(r, "MQClientFactoryScheduledThread");
         }
     });
-    private final ClientRemotingProcessor clientRemotingProcessor;
+    private final ClientRemotingProcessor clientRemotingProcessor;//客户端远程处理程序 消费者使用
     private final PullMessageService pullMessageService;
     private final RebalanceService rebalanceService;
-    private final DefaultMQProducer defaultMQProducer;
+    private final DefaultMQProducer defaultMQProducer;//客户端实例构建了一个内部的生产者，用于执行定时服务
     private ServiceState serviceState = ServiceState.CREATE_JUST;
     private DatagramSocket datagramSocket;
 
@@ -101,6 +103,8 @@ public class MQClientInstance {
         this.nettyClientConfig = new NettyClientConfig();
         this.nettyClientConfig.setClientCallbackExecutorThreads(clientConfig.getClientCallbackExecutorThreads());
         this.clientRemotingProcessor = new ClientRemotingProcessor(this);
+        //创建了与服务端通信的API对象，所有与服务端通信的接口都通过MQClientAPIImpl来实现。
+        // 并向API对象注册了客户端远程处理程序ClientRemotingProcessor，用于处理服务端发送过来的请求（这个处理程序只有消费者有用到，生产者不使用）。
         this.mQClientAPIImpl =
                 new MQClientAPIImpl(this.nettyClientConfig, this.clientRemotingProcessor, rpcHook, clientConfig.getUnitName());
 
@@ -113,10 +117,10 @@ public class MQClientInstance {
 
         this.mQAdminImpl = new MQAdminImpl(this);
 
-        this.pullMessageService = new PullMessageService(this);
+        this.pullMessageService = new PullMessageService(this);//拉取消息服务
 
-        this.rebalanceService = new RebalanceService(this);
-
+        this.rebalanceService = new RebalanceService(this);//负载均衡服务
+        //新创建了一个内部的生产者
         this.defaultMQProducer = new DefaultMQProducer(MixAll.CLIENT_INNER_PRODUCER_GROUP);
         this.defaultMQProducer.resetClientConfig(clientConfig);
 
@@ -140,21 +144,21 @@ public class MQClientInstance {
 
         synchronized (this) {
             switch (this.serviceState) {
-            case CREATE_JUST:
+            case CREATE_JUST://第一次启动时候，开启以下几个服务
                 this.serviceState = ServiceState.START_FAILED;
                 // If not specified,looking address from name server
                 if (null == this.clientConfig.getNamesrvAddr()) {
                     this.clientConfig.setNamesrvAddr(this.mQClientAPIImpl.fetchNameServerAddr());
                 }
-                // Start request-response channel
+                // Start request-response channel 开启Netty客户端
                 this.mQClientAPIImpl.start();
-                // Start various schedule tasks
+                // Start various schedule tasks 开启几个定时服务
                 this.startScheduledTask();
-                // Start pull service
+                // Start pull service 拉取消息服务，消费者才使用到
                 this.pullMessageService.start();
-                // Start rebalance service
+                // Start rebalance service 启动负载均衡服务，生产者发送消息选择队列时才用轮询机制
                 this.rebalanceService.start();
-                // Start push service
+                // Start push service 开启推送服务，启动内部生产者实例
                 this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                 log.info("the client factory [{}] start OK", this.clientId);
                 this.serviceState = ServiceState.RUNNING;
@@ -171,7 +175,9 @@ public class MQClientInstance {
         }
     }
 
-
+    /**
+     * 开启定时服务
+     */
     private void startScheduledTask() {
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
@@ -848,12 +854,17 @@ public class MQClientInstance {
         }
     }
 
-
+    /**
+     * 注册Producer
+     * @param group 组名
+     * @param producer 生产者
+     * @return
+     */
     public boolean registerProducer(final String group, final DefaultMQProducerImpl producer) {
         if (null == group || null == producer) {
             return false;
         }
-
+        //一个客户端应用程序，一个Group里面只能创建一个Producer
         MQProducerInner prev = this.producerTable.putIfAbsent(group, producer);
         if (prev != null) {
             log.warn("the producer group[{}] exist already.", group);
