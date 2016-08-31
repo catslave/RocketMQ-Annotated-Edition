@@ -189,6 +189,7 @@ public abstract class AbstractSendMessageProcessor implements NettyRequestProces
             return response;
         }
 
+        //如果Topic不存在，则新建一个Topic
         TopicConfig topicConfig =
                 this.brokerController.getTopicConfigManager().selectTopicConfig(requestHeader.getTopic());
         if (null == topicConfig) {

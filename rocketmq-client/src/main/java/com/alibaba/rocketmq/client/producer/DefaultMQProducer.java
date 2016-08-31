@@ -33,6 +33,8 @@ import java.util.List;
 
 /**
  * 默认的消息生产者对象
+ * 启动一个客户端与Name Server服务端进行通信，定期获取Name Server地址，定期获取Topic路由信息，定期维护Broker连接。
+ *
  * @author shijia.wxr
  */
 public class DefaultMQProducer extends ClientConfig implements MQProducer {

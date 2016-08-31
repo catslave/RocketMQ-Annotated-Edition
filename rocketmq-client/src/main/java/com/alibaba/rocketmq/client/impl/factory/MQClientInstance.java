@@ -156,7 +156,7 @@ public class MQClientInstance {
                 this.startScheduledTask();
                 // Start pull service 拉取消息服务，消费者才使用到
                 this.pullMessageService.start();
-                // Start rebalance service 启动负载均衡服务，生产者发送消息选择队列时才用轮询机制
+                // Start rebalance service 启动负载均衡服务，消费者才使用到
                 this.rebalanceService.start();
                 // Start push service 开启推送服务，启动内部生产者实例
                 this.defaultMQProducer.getDefaultMQProducerImpl().start(false);

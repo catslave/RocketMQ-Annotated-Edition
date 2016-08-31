@@ -42,6 +42,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
+ * Name Server 主要就是启动了一个服务端，然后向这个服务端注册了一个远程请求处理程序，
+ * 和管道监听事件。在 Name Server 端，保存了所有的路由信息。
+ *
+ * Name Server 实现步骤：
+ * 1.加载配置文件
+ * 2.启动服务端
+ * 3.注册处理程序
+ * 4.维护路由信息
+ *
  * @author shijia.wxr
  */
 public class NamesrvStartup {

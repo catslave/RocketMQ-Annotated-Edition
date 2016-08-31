@@ -618,6 +618,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     private TopicPublishInfo tryToFindTopicPublishInfo(final String topic) {
         TopicPublishInfo topicPublishInfo = this.topicPublishInfoTable.get(topic);
+        //1.从NameServer获取Topic路由信息  isDefault false
         if (null == topicPublishInfo || !topicPublishInfo.ok()) {
             this.topicPublishInfoTable.putIfAbsent(topic, new TopicPublishInfo());
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic);
@@ -628,6 +629,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             return topicPublishInfo;
         }
         else {
+            //2.如果Topic路由信息不存在，则从NameServer获取系统默认的Topic路由信息 isDefault true
             this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, true, this.defaultMQProducer);
             topicPublishInfo = this.topicPublishInfoTable.get(topic);
             return topicPublishInfo;
