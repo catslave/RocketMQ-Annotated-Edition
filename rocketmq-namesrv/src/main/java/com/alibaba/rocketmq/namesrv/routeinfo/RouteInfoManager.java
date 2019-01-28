@@ -781,7 +781,7 @@ public class RouteInfoManager {
                     if (queueDatas != null && queueDatas.size() > 0
                             && !TopicSysFlag.hasUnitFlag(queueDatas.get(0).getTopicSynFlag())
                             && TopicSysFlag.hasUnitSubFlag(queueDatas.get(0).getTopicSynFlag())) {
-                        topicList.getTopicList().add(topic);
+                        topicList.getTopic List().add(topic);
                     }
                 }
             }
